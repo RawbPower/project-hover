@@ -1,2 +1,2 @@
 # project-hover
-Hover car game with an emphasis on physics
+Hover car game with an emphasis on game physics.
