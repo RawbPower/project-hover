@@ -804,3 +804,6 @@ MonoBehaviour:
   angularDrag: 5
   linearThreshold: 0.1
   angularThreshold: 0.1
+  gravity: 10
+  verticalWobbleAmplitude: 0.05
+  verticalWobbleFrequency: 1.8

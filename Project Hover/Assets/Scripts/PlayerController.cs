@@ -11,8 +11,11 @@ public class PlayerController : MonoBehaviour
     public float linearThreshold = 0.1f;
     public float angularThreshold = 0.1f;
 
-    private float linearVelocity, angularVelocity;
-    private float linearAcceleration, angularAcceleration;
+    public float gravity = 10f;
+    public float verticalWobbleAmplitude, verticalWobbleFrequency;
+
+    private float linearVelocity, angularVelocity, verticalVelocity;
+    private float linearAcceleration, angularAcceleration, verticalAcceleration;
     private float thrusterDistance;
 
     private Transform mainThruster;
@@ -25,6 +28,7 @@ public class PlayerController : MonoBehaviour
         // Initialize the velocities
         linearVelocity = 0;
         angularVelocity = 0;
+        verticalVelocity = 0;
         // Get the position of thrusters from COM
         mainThruster = this.transform.GetChild(0).GetChild(1);
         rightThruster = this.transform.GetChild(0).GetChild(2);
@@ -57,20 +61,15 @@ public class PlayerController : MonoBehaviour
             linearVelocity = 0;
         if (Mathf.Abs(angularVelocity) < angularThreshold)
             angularVelocity = 0;
+
+        // Calculate vertical motion
+        verticalAcceleration = -gravity;
+        verticalAcceleration += gravity + verticalWobbleAmplitude*gravity*Mathf.Cos(verticalWobbleFrequency*Time.time);
+        Debug.Log(verticalAcceleration);
+        verticalVelocity += verticalAcceleration * Time.deltaTime;
         // Update position
         transform.RotateAround(transform.position, transform.up, angularVelocity*Time.deltaTime);
         transform.position += (linearVelocity * transform.forward * Time.deltaTime);
+        this.transform.GetChild(0).position += (verticalVelocity * transform.up * Time.deltaTime);
     }
-
-    /*void Update()
-    {
-        rot = rotSpeed * (System.Convert.ToSingle(Input.GetButton("RightBurst")) - System.Convert.ToSingle(Input.GetButton("LeftBurst")));
-        vel += linearAcceleration * System.Convert.ToSingle(Input.GetButton("Fire1")) * Time.deltaTime;
-        vel -= airDrag * vel;
-        if (vel < threshold)
-            vel = 0;
-        Debug.Log(vel);
-        transform.RotateAround(transform.position, transform.up, rot * Time.deltaTime);
-        transform.position += (vel * transform.forward * Time.deltaTime);
-    }*/
 }
