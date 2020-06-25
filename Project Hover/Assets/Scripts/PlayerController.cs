@@ -13,9 +13,11 @@ public class PlayerController : MonoBehaviour
 
     public float gravity = 10f;
     public float verticalWobbleAmplitude, verticalWobbleFrequency;
+    public float angularWobbleAmplitude, angularWobbleFrequency;
 
-    private float linearVelocity, angularVelocity, verticalVelocity;
-    private float linearAcceleration, angularAcceleration, verticalAcceleration;
+    private float linearVelocity, angularVelocity, verticalVelocity, wobbleVelocity;
+    private float midVelocity = 0, midWobble = 0;
+    private float linearAcceleration, angularAcceleration, verticalAcceleration = 0, wobbleAcceleration = 0;
     private float thrusterDistance;
 
     private Transform mainThruster;
@@ -28,13 +30,13 @@ public class PlayerController : MonoBehaviour
         // Initialize the velocities
         linearVelocity = 0;
         angularVelocity = 0;
-        verticalVelocity = 0;
+        verticalVelocity = verticalWobbleAmplitude*verticalWobbleFrequency;
+        wobbleVelocity = angularWobbleAmplitude * angularWobbleFrequency;
         // Get the position of thrusters from COM
         mainThruster = this.transform.GetChild(0).GetChild(1);
         rightThruster = this.transform.GetChild(0).GetChild(2);
         leftThruster = this.transform.GetChild(0).GetChild(3);
         thrusterDistance = Vector3.Distance(this.transform.position, rightThruster.position);
-        Debug.Log(rightThruster.name);
     }
 
     // Update is called once per frame
@@ -44,15 +46,18 @@ public class PlayerController : MonoBehaviour
         mainThruster.GetChild(0).gameObject.SetActive(Input.GetButton("Fire1"));
         rightThruster.GetChild(0).gameObject.SetActive(Input.GetButton("LeftBurst"));
         leftThruster.GetChild(0).gameObject.SetActive(Input.GetButton("RightBurst"));
+
         // Calculate acceleration
         linearAcceleration = (centerAcceleration) * System.Convert.ToSingle(Input.GetButton("Fire1"));
         linearAcceleration += sideAcceleration * (System.Convert.ToSingle(Input.GetButton("RightBurst")) + System.Convert.ToSingle(Input.GetButton("LeftBurst")));
         linearAcceleration -= linearDrag * linearVelocity;
+
         // Calculate angular acceleration
         angularAcceleration = (sideAcceleration/thrusterDistance) * (System.Convert.ToSingle(Input.GetButton("RightBurst")) - System.Convert.ToSingle(Input.GetButton("LeftBurst"))) * Mathf.Rad2Deg;
         //Debug.Log(angularAcceleration);
         angularAcceleration -= angularDrag * angularVelocity;
         //Debug.Log(angularAcceleration);
+
         // Update Velocities
         linearVelocity += linearAcceleration * Time.deltaTime;
         angularVelocity += angularAcceleration * Time.deltaTime;
@@ -62,14 +67,30 @@ public class PlayerController : MonoBehaviour
         if (Mathf.Abs(angularVelocity) < angularThreshold)
             angularVelocity = 0;
 
-        // Calculate vertical motion
+        // Calculate vertical motion (Velocity Verlet method)
+        midVelocity = verticalVelocity + verticalAcceleration*(Time.deltaTime/2);
+        this.transform.GetChild(0).position += (midVelocity * transform.up * Time.deltaTime);
+        // Prevent any build up of small errors
+        if (Mathf.Abs(transform.GetChild(0).localPosition.y) > verticalWobbleAmplitude)
+            this.transform.GetChild(0).localPosition = new Vector3(transform.GetChild(0).localPosition.x, verticalWobbleAmplitude * Mathf.Sign(transform.GetChild(0).localPosition.y), transform.GetChild(0).localPosition.z);
         verticalAcceleration = -gravity;
-        verticalAcceleration += gravity + verticalWobbleAmplitude*gravity*Mathf.Cos(verticalWobbleFrequency*Time.time);
-        Debug.Log(verticalAcceleration);
-        verticalVelocity += verticalAcceleration * Time.deltaTime;
+        verticalAcceleration += gravity - verticalWobbleAmplitude * verticalWobbleFrequency * verticalWobbleFrequency * Mathf.Sin(verticalWobbleFrequency*Time.time);
+        verticalVelocity = midVelocity + verticalAcceleration * (Time.deltaTime / 2);
+
+        // Calculate angular wobble
+        midWobble = wobbleVelocity + wobbleAcceleration * (Time.deltaTime / 2);
+        this.transform.GetChild(0).RotateAround(transform.position, transform.forward, midWobble * Time.deltaTime);
+        // Prevent any build up of small errors
+        if (Mathf.Abs(transform.GetChild(0).localEulerAngles.z) > angularWobbleAmplitude)
+            this.transform.GetChild(0).localEulerAngles = new Vector3(transform.GetChild(0).localEulerAngles.x, angularWobbleAmplitude * Mathf.Sign(transform.GetChild(0).localEulerAngles.y), transform.GetChild(0).localEulerAngles.z);
+
+        wobbleAcceleration = - angularWobbleAmplitude * angularWobbleFrequency * angularWobbleFrequency * Mathf.Sin(angularWobbleFrequency * Time.time);
+        wobbleVelocity = midWobble + wobbleAcceleration * (Time.deltaTime / 2);
+
         // Update position
         transform.RotateAround(transform.position, transform.up, angularVelocity*Time.deltaTime);
         transform.position += (linearVelocity * transform.forward * Time.deltaTime);
-        this.transform.GetChild(0).position += (verticalVelocity * transform.up * Time.deltaTime);
+        //Debug.Log("A: " + verticalAcceleration + " - V: " + verticalVelocity + " - X: " + this.transform.GetChild(0).position);
+        //Debug.Log("A: " + wobbleAcceleration + " - V: " + wobbleVelocity + " - X: " + this.transform.GetChild(0).localEulerAngles.z);
     }
 }
