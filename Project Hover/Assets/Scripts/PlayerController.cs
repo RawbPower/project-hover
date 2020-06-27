@@ -40,7 +40,7 @@ public class PlayerController : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         // Make flame appear
         mainThruster.GetChild(0).gameObject.SetActive(Input.GetButton("Fire1"));
@@ -81,9 +81,11 @@ public class PlayerController : MonoBehaviour
         midWobble = wobbleVelocity + wobbleAcceleration * (Time.deltaTime / 2);
         this.transform.GetChild(0).RotateAround(transform.position, transform.forward, midWobble * Time.deltaTime);
         // Prevent any build up of small errors
-        if (Mathf.Abs(transform.GetChild(0).localEulerAngles.z) > angularWobbleAmplitude)
-            this.transform.GetChild(0).localEulerAngles = new Vector3(transform.GetChild(0).localEulerAngles.x, angularWobbleAmplitude * Mathf.Sign(transform.GetChild(0).localEulerAngles.y), transform.GetChild(0).localEulerAngles.z);
-
+        Debug.Log(Mathf.Abs(transform.GetChild(0).localEulerAngles.z));
+        if (transform.GetChild(0).localEulerAngles.z > angularWobbleAmplitude && transform.GetChild(0).localEulerAngles.z < 180.0f)
+            this.transform.GetChild(0).localEulerAngles = new Vector3(transform.GetChild(0).localEulerAngles.x, transform.GetChild(0).localEulerAngles.y, angularWobbleAmplitude);
+        else if (transform.GetChild(0).localEulerAngles.z < 360.0f - angularWobbleAmplitude && transform.GetChild(0).localEulerAngles.z > 180.0f)
+            this.transform.GetChild(0).localEulerAngles = new Vector3(transform.GetChild(0).localEulerAngles.x, transform.GetChild(0).localEulerAngles.y, 360.0f - angularWobbleAmplitude);
         wobbleAcceleration = - angularWobbleAmplitude * angularWobbleFrequency * angularWobbleFrequency * Mathf.Sin(angularWobbleFrequency * Time.time);
         wobbleVelocity = midWobble + wobbleAcceleration * (Time.deltaTime / 2);
 

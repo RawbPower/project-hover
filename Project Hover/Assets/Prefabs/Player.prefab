@@ -805,5 +805,7 @@ MonoBehaviour:
   linearThreshold: 0.1
   angularThreshold: 0.1
   gravity: 10
-  verticalWobbleAmplitude: 0.05
-  verticalWobbleFrequency: 1.8
+  verticalWobbleAmplitude: 0.1
+  verticalWobbleFrequency: 1.5
+  angularWobbleAmplitude: 1
+  angularWobbleFrequency: 1.2
