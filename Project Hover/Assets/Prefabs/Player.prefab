@@ -800,8 +800,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   centerAcceleration: 150
   sideAcceleration: 30
-  linearDrag: 0.8
-  angularDrag: 5
+  linearDrag: 0.01
+  angularDrag: 0.04
   linearThreshold: 0.1
   angularThreshold: 0.1
   gravity: 10

@@ -37,6 +37,7 @@ public class PlayerController : MonoBehaviour
         rightThruster = this.transform.GetChild(0).GetChild(2);
         leftThruster = this.transform.GetChild(0).GetChild(3);
         thrusterDistance = Vector3.Distance(this.transform.position, rightThruster.position);
+        //Debug.Log(thrusterDistance);
     }
 
     // Update is called once per frame
@@ -50,17 +51,18 @@ public class PlayerController : MonoBehaviour
         // Calculate acceleration
         linearAcceleration = (centerAcceleration) * System.Convert.ToSingle(Input.GetButton("Fire1"));
         linearAcceleration += sideAcceleration * (System.Convert.ToSingle(Input.GetButton("RightBurst")) + System.Convert.ToSingle(Input.GetButton("LeftBurst")));
-        linearAcceleration -= linearDrag * linearVelocity;
+        linearAcceleration -= linearDrag * linearVelocity * linearVelocity * Mathf.Sign(linearVelocity);
 
         // Calculate angular acceleration
         angularAcceleration = (sideAcceleration/thrusterDistance) * (System.Convert.ToSingle(Input.GetButton("RightBurst")) - System.Convert.ToSingle(Input.GetButton("LeftBurst"))) * Mathf.Rad2Deg;
         //Debug.Log(angularAcceleration);
-        angularAcceleration -= angularDrag * angularVelocity;
+        angularAcceleration -= angularDrag * angularVelocity * angularVelocity * Mathf.Sign(angularVelocity);
         //Debug.Log(angularAcceleration);
 
         // Update Velocities
         linearVelocity += linearAcceleration * Time.deltaTime;
         angularVelocity += angularAcceleration * Time.deltaTime;
+        Debug.Log(angularVelocity);
         //Debug.LogError(angularVelocity);
         if (linearVelocity < linearThreshold)
             linearVelocity = 0;
@@ -81,7 +83,7 @@ public class PlayerController : MonoBehaviour
         midWobble = wobbleVelocity + wobbleAcceleration * (Time.deltaTime / 2);
         this.transform.GetChild(0).RotateAround(transform.position, transform.forward, midWobble * Time.deltaTime);
         // Prevent any build up of small errors
-        Debug.Log(Mathf.Abs(transform.GetChild(0).localEulerAngles.z));
+        //Debug.Log(Mathf.Abs(transform.GetChild(0).localEulerAngles.z));
         if (transform.GetChild(0).localEulerAngles.z > angularWobbleAmplitude && transform.GetChild(0).localEulerAngles.z < 180.0f)
             this.transform.GetChild(0).localEulerAngles = new Vector3(transform.GetChild(0).localEulerAngles.x, transform.GetChild(0).localEulerAngles.y, angularWobbleAmplitude);
         else if (transform.GetChild(0).localEulerAngles.z < 360.0f - angularWobbleAmplitude && transform.GetChild(0).localEulerAngles.z > 180.0f)
