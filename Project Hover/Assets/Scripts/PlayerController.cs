@@ -21,10 +21,12 @@ public class PlayerController : MonoBehaviour
     public float verticalWobbleAmplitude, verticalWobbleFrequency;
     public float angularWobbleAmplitude, angularWobbleFrequency;
 
-    private float linearVelocity, angularVelocity, verticalVelocity, wobbleVelocity, horizontalVelocity;
+    private float angularVelocity, verticalVelocity, wobbleVelocity;
+    private Vector3 linearVelocity;
     private float midVelocity = 0, midWobble = 0;
-    private float linearAcceleration, angularAcceleration, verticalAcceleration = 0, wobbleAcceleration = 0, horizontalAcceleration = 0;
-    private float thrusterDistance, brakeDistance;
+    private float angularAcceleration, verticalAcceleration = 0, wobbleAcceleration = 0, horizontalAcceleration = 0;
+    private Vector3 linearAcceleration;
+    private float thrusterDistance, thrusterAngle, brakeDistance, brakeAngle;
 
     private Transform mainThruster;
     private Transform rightThruster;
@@ -35,9 +37,11 @@ public class PlayerController : MonoBehaviour
     private Transform leftStrafer;
     private bool axisInUse;
     private float strafeTimer;
-    private int strafeDir = 0;
+    private Vector3 strafeDir;
     private bool strafing;
     private bool reverse;
+    private float strafeRatio;
+
 
     // Start is called before the first frame update
     void Start()
@@ -45,9 +49,8 @@ public class PlayerController : MonoBehaviour
         // Initialize the velocities
         axisInUse = false;
         strafing = false;
-        linearVelocity = 0;
+        linearVelocity = new Vector3(0, 0, 0);
         angularVelocity = 0;
-        horizontalVelocity = 0;
         verticalVelocity = verticalWobbleAmplitude*verticalWobbleFrequency;
         wobbleVelocity = angularWobbleAmplitude * angularWobbleFrequency;
         // Get the position of thrusters from COM
@@ -59,14 +62,19 @@ public class PlayerController : MonoBehaviour
         rightStrafer = this.transform.GetChild(0).GetChild(6);
         leftStrafer = this.transform.GetChild(0).GetChild(7);
         thrusterDistance = Vector3.Distance(this.transform.position, rightThruster.position);
+        thrusterAngle = Vector3.Angle(rightThruster.position - this.transform.position, mainThruster.position - this.transform.position);
         brakeDistance = Vector3.Distance(this.transform.position, rightBrake.position);
-        Debug.Log(rightStrafer.name);
+        brakeAngle = Vector3.Angle(rightBrake.position - this.transform.position, mainThruster.position - this.transform.position);
+        Debug.Log(thrusterAngle + " - " + brakeAngle);
     }
 
     // Update is called once per frame
     void Update()
     {
         // Make flame appear
+        linearAcceleration = new Vector3(0,0,0);
+        angularAcceleration = 0;
+        horizontalAcceleration = 0;
         mainThruster.GetChild(0).gameObject.SetActive(Input.GetButton("Fire1"));
         mainThruster.GetChild(1).gameObject.SetActive(Input.GetButton("Fire2"));
         rightThruster.GetChild(0).gameObject.SetActive(Input.GetButton("LeftBurst"));
@@ -74,21 +82,19 @@ public class PlayerController : MonoBehaviour
         rightBrake.gameObject.SetActive(Input.GetAxis("RightBrake") > 0);
         leftBrake.gameObject.SetActive(Input.GetAxis("LeftBrake") > 0);
 
-        if (linearVelocity > 0)
+        /*if (linearVelocity > 0)
         {
             reverse = false;
         } else if (Input.GetButtonDown("Fire2") && linearVelocity <= 0)
         {
             reverse = true;
-        }
+        }*/
 
-            // Calculate acceleration
-        linearAcceleration = (centerAcceleration) * System.Convert.ToSingle(Input.GetButton("Fire1"));
-        linearAcceleration += - reverseRatio*(centerAcceleration) * System.Convert.ToSingle(Input.GetButton("Fire2"));
-        linearAcceleration += sideAcceleration * (System.Convert.ToSingle(Input.GetButton("RightBurst")) + System.Convert.ToSingle(Input.GetButton("LeftBurst")));
-        linearAcceleration -= linearDrag * linearVelocity * linearVelocity * Mathf.Sign(linearVelocity);
-        linearAcceleration -= sideLinearDrag * (System.Math.Sign(Input.GetAxis("RightBrake")) + System.Math.Sign(Input.GetAxis("LeftBrake"))) * linearVelocity * linearVelocity * Mathf.Sign(linearVelocity);
-
+        // Calculate acceleration
+        linearAcceleration += (centerAcceleration) * System.Convert.ToSingle(Input.GetButton("Fire1")) * transform.forward;
+        linearAcceleration += - reverseRatio*(centerAcceleration) * System.Convert.ToSingle(Input.GetButton("Fire2")) * transform.forward;
+        linearAcceleration += sideAcceleration * (System.Convert.ToSingle(Input.GetButton("RightBurst")) + System.Convert.ToSingle(Input.GetButton("LeftBurst"))) * transform.forward;
+     
         if (Input.GetAxisRaw("Horizontal") != 0)
         {
             if (axisInUse == false)
@@ -96,71 +102,82 @@ public class PlayerController : MonoBehaviour
                 if (!strafing)
                 {
                     strafing = true;
-                    strafeDir = System.Math.Sign(Input.GetAxisRaw("Horizontal"));
+                    strafeRatio = Mathf.Abs(strafeShift - (linearDrag) * Vector3.Dot(linearVelocity, linearVelocity)) / (strafeShift + (linearDrag + 2 * sideLinearDrag) * Vector3.Dot(linearVelocity, linearVelocity));
+                    //Debug.Log("Ratio - " + strafeRatio);
+                    strafeDir = System.Math.Sign(Input.GetAxisRaw("Horizontal")) * Vector3.Cross(transform.up, transform.forward).normalized;
                 }
                 axisInUse = true;
-            } else
-            {
-                horizontalAcceleration = 0;
             }
         }
         if (Input.GetAxisRaw("Horizontal") == 0)
         {
-            horizontalAcceleration = 0;
             axisInUse = false;
         }
 
-        if (strafing)
-        {
-            horizontalAcceleration = strafeDir * strafeShift * 4 * (Mathf.PI * Mathf.PI)/(strafeTime*strafeTime) * Mathf.Sin(2* Mathf.PI * strafeTimer/strafeTime);
-            leftStrafer.GetChild(0).GetChild(0).gameObject.SetActive(horizontalAcceleration > 0);
-            leftStrafer.GetChild(1).GetChild(0).gameObject.SetActive(horizontalAcceleration > 0);
-            rightStrafer.GetChild(0).GetChild(0).gameObject.SetActive(horizontalAcceleration < 0);
-            rightStrafer.GetChild(1).GetChild(0).gameObject.SetActive(horizontalAcceleration < 0);
-            strafeTimer += Time.deltaTime;
-            Debug.Log(horizontalAcceleration);
-        } else
-        {
-            leftStrafer.GetChild(0).GetChild(0).gameObject.SetActive(false);
-            leftStrafer.GetChild(1).GetChild(0).gameObject.SetActive(false);
-            rightStrafer.GetChild(0).GetChild(0).gameObject.SetActive(false);
-            rightStrafer.GetChild(1).GetChild(0).gameObject.SetActive(false);
+        if (strafing) {
+            if (strafeTimer < strafeTime)
+            {
+                /*horizontalAcceleration = strafeDir * strafeShift * (Mathf.PI * Mathf.PI)/(4*strafeTime*strafeTime) * Mathf.Sin((Mathf.PI * strafeTimer)/(2*strafeTime));
+               leftStrafer.GetChild(0).GetChild(0).gameObject.SetActive(horizontalAcceleration > 0);
+               leftStrafer.GetChild(1).GetChild(0).gameObject.SetActive(horizontalAcceleration > 0);
+               rightStrafer.GetChild(0).GetChild(0).gameObject.SetActive(horizontalAcceleration < 0);
+               rightStrafer.GetChild(1).GetChild(0).gameObject.SetActive(horizontalAcceleration < 0);
+               linearAcceleration += horizontalAcceleration * Vector3.Cross(transform.up, transform.forward).normalized;*/
+                linearAcceleration += strafeDir * strafeShift;
+                strafeTimer += Time.deltaTime;
+            }
+            else if (strafeTimer > strafeTime && strafeTimer < (strafeTime + strafeTime))
+            {
+                linearAcceleration += -strafeDir * strafeShift;
+                strafeTimer += Time.deltaTime;
+            }
+            else
+            {
+                strafing = false;
+                strafeTimer = 0;
+                //Debug.Log(Vector3.Cross(transform.up, transform.forward).normalized);
+                //Debug.Log(linearVelocity);
+                //Debug.Log(Vector3.Dot(linearVelocity, Vector3.Cross(transform.up, transform.forward)) * Vector3.Cross(transform.up, transform.forward).normalized);
+                linearVelocity -= Vector3.Dot(linearVelocity, Vector3.Cross(transform.up, transform.forward))* Vector3.Cross(transform.up, transform.forward).normalized;     // This, not sure not really physical but may just be fixing error. Must check maths
+                //Debug.Log(linearVelocity);
+                strafeDir = new Vector3(0,0,0);
+            }
         }
 
-        if (strafeTimer > strafeTime)
+        //Debug.Log(linearAcceleration);
+        if (!strafing)
         {
-            strafing = false;
-            strafeTimer = 0;
-            strafeDir = 0;
-            horizontalVelocity = 0;     // This, not sure not really physical but may just be fixing error. Must check maths
+            linearAcceleration -= linearDrag * Vector3.Dot(linearVelocity, linearVelocity) * linearVelocity.normalized;
+            //Debug.Log(linearDrag * Vector3.Dot(linearVelocity, linearVelocity) * linearVelocity.normalized.x);
+            //Debug.Log(linearDrag * Vector3.Dot(linearVelocity, linearVelocity) * linearVelocity.normalized);
+            //linearAcceleration -= linearDrag * new Vector3(linearVelocity.x * linearVelocity.x, linearVelocity.y * linearVelocity.y, linearVelocity.z * linearVelocity.z);
+            linearAcceleration -= sideLinearDrag * (System.Math.Sign(Input.GetAxis("RightBrake")) + System.Math.Sign(Input.GetAxis("LeftBrake"))) * Vector3.Dot(linearVelocity, linearVelocity) * linearVelocity.normalized;
         }
 
         //horizontalAcceleration -= horizontalDrag * horizontalVelocity * horizontalVelocity * Mathf.Sign(horizontalVelocity);
 
         // Calculate angular acceleration
-        angularAcceleration = (sideAcceleration/thrusterDistance) * (System.Convert.ToSingle(Input.GetButton("RightBurst")) - System.Convert.ToSingle(Input.GetButton("LeftBurst"))) * Mathf.Rad2Deg;
-        angularAcceleration -= sideAngularDrag * (System.Math.Sign(Input.GetAxis("LeftBrake")) - System.Math.Sign(Input.GetAxis("RightBrake"))) * Mathf.Rad2Deg;
-        //Debug.Log(System.Math.Sign(Input.GetAxis("RightBrake")) - System.Math.Sign(Input.GetAxis("LeftBrake")));
+        angularAcceleration = ((sideAcceleration*Mathf.Sin(thrusterAngle))/thrusterDistance) * (System.Convert.ToSingle(Input.GetButton("LeftBurst")) - System.Convert.ToSingle(Input.GetButton("RightBurst"))) * Mathf.Rad2Deg;
+        angularAcceleration -= ((sideLinearDrag * Vector3.Dot(linearVelocity, linearVelocity) * (System.Math.Sign(Input.GetAxis("RightBrake")) - System.Math.Sign(Input.GetAxis("LeftBrake"))) * Mathf.Sin(brakeAngle))/brakeDistance) * Mathf.Rad2Deg;
+        //Debug.Log(sideAngularDrag * angularVelocity * angularVelocity * (System.Math.Sign(Input.GetAxis("LeftBrake")) - System.Math.Sign(Input.GetAxis("RightBrake"))));
 
         // Might need to fixed the angular drag to something more realistic
         angularAcceleration -= angularDrag * angularVelocity * angularVelocity * Mathf.Sign(angularVelocity);
         //Debug.Log(angularAcceleration);
 
+        //Debug.Log(linearAcceleration);
         // Update Velocities
         linearVelocity += linearAcceleration * Time.deltaTime;
-        if (!reverse && linearVelocity < 0)
-            linearVelocity = 0;
+        /*if (!reverse && linearVelocity < 0)
+            linearVelocity = 0;*/
         angularVelocity += angularAcceleration * Time.deltaTime;
-        horizontalVelocity += horizontalAcceleration * Time.deltaTime;
 
         //Debug.Log(angularVelocity);
         //Debug.LogError(angularVelocity);
-        if (Mathf.Abs(linearVelocity) < linearThreshold)
-            linearVelocity = 0;
-        if (Mathf.Abs(angularVelocity) < angularThreshold)
-            angularVelocity = 0;
-        if (Mathf.Abs(horizontalVelocity) < linearThreshold)
-            horizontalVelocity = 0;
+        if (Mathf.Abs(linearVelocity.magnitude) < linearThreshold)
+            linearVelocity = new Vector3(0,0,0);
+       if (Mathf.Abs(angularVelocity) < angularThreshold)
+          angularVelocity = 0;
 
         // Calculate vertical motion (Velocity Verlet method)
         midVelocity = verticalVelocity + verticalAcceleration*(Time.deltaTime/2);
@@ -186,8 +203,8 @@ public class PlayerController : MonoBehaviour
 
         // Update position
         transform.RotateAround(transform.position, transform.up, angularVelocity*Time.deltaTime);
-        transform.position += (linearVelocity * transform.forward * Time.deltaTime);
-        transform.position += (horizontalVelocity * Vector3.Cross(transform.up, transform.forward) * Time.deltaTime); 
+        transform.position += (linearVelocity * Time.deltaTime);
+        Debug.Log(transform.position);
         //Debug.Log("A: " + verticalAcceleration + " - V: " + verticalVelocity + " - X: " + this.transform.GetChild(0).position);
         //Debug.Log("A: " + wobbleAcceleration + " - V: " + wobbleVelocity + " - X: " + this.transform.GetChild(0).localEulerAngles.z);
     }

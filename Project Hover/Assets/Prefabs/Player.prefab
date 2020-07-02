@@ -2030,15 +2030,15 @@ MonoBehaviour:
   centerAcceleration: 150
   reverseRatio: 0.5
   sideAcceleration: 30
-  strafeShift: 2
+  strafeShift: 100
   linearDrag: 0.01
   angularDrag: 0.2
   horizontalDrag: 0
   sideLinearDrag: 0.01
-  sideAngularDrag: 0.5
+  sideAngularDrag: 0.3
   linearThreshold: 0.1
   angularThreshold: 0.1
-  strafeTime: 0.5
+  strafeTime: 0.3
   gravity: 10
   verticalWobbleAmplitude: 0.1
   verticalWobbleFrequency: 1.5
