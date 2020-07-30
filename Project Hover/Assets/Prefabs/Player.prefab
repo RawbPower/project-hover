@@ -2031,14 +2031,16 @@ MonoBehaviour:
   reverseRatio: 0.5
   sideAcceleration: 30
   strafeShift: 100
-  linearDrag: 0.01
+  linearDrag: 0.3
+  frontArea: 0.55
   angularDrag: 0.2
-  horizontalDrag: 0
-  sideLinearDrag: 0.01
-  sideAngularDrag: 0.3
+  sideLinearDrag: 0.4
+  sideArea: 0.15
   linearThreshold: 0.1
   angularThreshold: 0.1
   strafeTime: 0.3
+  mass: 100
+  density: 1.225
   gravity: 10
   verticalWobbleAmplitude: 0.1
   verticalWobbleFrequency: 1.5

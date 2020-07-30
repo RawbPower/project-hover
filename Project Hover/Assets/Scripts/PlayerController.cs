@@ -9,13 +9,16 @@ public class PlayerController : MonoBehaviour
     public float sideAcceleration;
     public float strafeShift;
     public float linearDrag;
+    public float frontArea;
     public float angularDrag;
-    public float horizontalDrag;
     public float sideLinearDrag;
-    public float sideAngularDrag;
+    public float sideArea;
     public float linearThreshold = 0.1f;
     public float angularThreshold = 0.1f;
     public float strafeTime;
+
+    public float mass = 100f;
+    public float density = 1.225f;
 
     public float gravity = 10f;
     public float verticalWobbleAmplitude, verticalWobbleFrequency;
@@ -24,7 +27,7 @@ public class PlayerController : MonoBehaviour
     private float angularVelocity, verticalVelocity, wobbleVelocity;
     private Vector3 linearVelocity;
     private float midVelocity = 0, midWobble = 0;
-    private float angularAcceleration, verticalAcceleration = 0, wobbleAcceleration = 0, horizontalAcceleration = 0;
+    private float angularAcceleration, verticalAcceleration = 0, wobbleAcceleration = 0;
     private Vector3 linearAcceleration;
     private float thrusterDistance, thrusterAngle, brakeDistance, brakeAngle;
 
@@ -69,12 +72,11 @@ public class PlayerController : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         // Make flame appear
         linearAcceleration = new Vector3(0,0,0);
         angularAcceleration = 0;
-        horizontalAcceleration = 0;
         mainThruster.GetChild(0).gameObject.SetActive(Input.GetButton("Fire1"));
         mainThruster.GetChild(1).gameObject.SetActive(Input.GetButton("Fire2"));
         rightThruster.GetChild(0).gameObject.SetActive(Input.GetButton("LeftBurst"));
@@ -90,10 +92,7 @@ public class PlayerController : MonoBehaviour
             reverse = true;
         }*/
 
-        // Calculate acceleration
-        linearAcceleration += (centerAcceleration) * System.Convert.ToSingle(Input.GetButton("Fire1")) * transform.forward;
-        linearAcceleration += - reverseRatio*(centerAcceleration) * System.Convert.ToSingle(Input.GetButton("Fire2")) * transform.forward;
-        linearAcceleration += sideAcceleration * (System.Convert.ToSingle(Input.GetButton("RightBurst")) + System.Convert.ToSingle(Input.GetButton("LeftBurst"))) * transform.forward;
+        // Calculate acceleration with strafe
      
         if (Input.GetAxisRaw("Horizontal") != 0)
         {
@@ -147,18 +146,21 @@ public class PlayerController : MonoBehaviour
         //Debug.Log(linearAcceleration);
         if (!strafing)
         {
-            linearAcceleration -= linearDrag * Vector3.Dot(linearVelocity, linearVelocity) * linearVelocity.normalized;
+            linearAcceleration += (centerAcceleration) * System.Convert.ToSingle(Input.GetButton("Fire1")) * transform.forward;
+            linearAcceleration += -reverseRatio * (centerAcceleration) * System.Convert.ToSingle(Input.GetButton("Fire2")) * transform.forward;
+            linearAcceleration += sideAcceleration * (System.Convert.ToSingle(Input.GetButton("RightBurst")) + System.Convert.ToSingle(Input.GetButton("LeftBurst"))) * transform.forward;
+            linearAcceleration -= 0.5f * (density/mass) * frontArea * linearDrag * Vector3.Dot(linearVelocity, linearVelocity) * linearVelocity.normalized;
             //Debug.Log(linearDrag * Vector3.Dot(linearVelocity, linearVelocity) * linearVelocity.normalized.x);
             //Debug.Log(linearDrag * Vector3.Dot(linearVelocity, linearVelocity) * linearVelocity.normalized);
             //linearAcceleration -= linearDrag * new Vector3(linearVelocity.x * linearVelocity.x, linearVelocity.y * linearVelocity.y, linearVelocity.z * linearVelocity.z);
-            linearAcceleration -= sideLinearDrag * (System.Math.Sign(Input.GetAxis("RightBrake")) + System.Math.Sign(Input.GetAxis("LeftBrake"))) * Vector3.Dot(linearVelocity, linearVelocity) * linearVelocity.normalized;
+            linearAcceleration -= 0.5f * (density / mass) * sideArea * sideLinearDrag * (System.Math.Sign(Input.GetAxis("RightBrake")) + System.Math.Sign(Input.GetAxis("LeftBrake"))) * Vector3.Dot(linearVelocity, linearVelocity) * linearVelocity.normalized;
         }
 
         //horizontalAcceleration -= horizontalDrag * horizontalVelocity * horizontalVelocity * Mathf.Sign(horizontalVelocity);
 
         // Calculate angular acceleration
         angularAcceleration = ((sideAcceleration*Mathf.Sin(thrusterAngle))/thrusterDistance) * (System.Convert.ToSingle(Input.GetButton("LeftBurst")) - System.Convert.ToSingle(Input.GetButton("RightBurst"))) * Mathf.Rad2Deg;
-        angularAcceleration -= ((sideLinearDrag * Vector3.Dot(linearVelocity, linearVelocity) * (System.Math.Sign(Input.GetAxis("RightBrake")) - System.Math.Sign(Input.GetAxis("LeftBrake"))) * Mathf.Sin(brakeAngle))/brakeDistance) * Mathf.Rad2Deg;
+        angularAcceleration -= 0.5f * (density / mass) * sideArea * ((sideLinearDrag * Vector3.Dot(linearVelocity, linearVelocity) * (System.Math.Sign(Input.GetAxis("RightBrake")) - System.Math.Sign(Input.GetAxis("LeftBrake"))) * Mathf.Sin(brakeAngle))/brakeDistance) * Mathf.Rad2Deg;
         //Debug.Log(sideAngularDrag * angularVelocity * angularVelocity * (System.Math.Sign(Input.GetAxis("LeftBrake")) - System.Math.Sign(Input.GetAxis("RightBrake"))));
 
         // Might need to fixed the angular drag to something more realistic
