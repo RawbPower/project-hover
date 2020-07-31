@@ -35,6 +35,8 @@ public class PlayerController : MonoBehaviour
     private Vector3 linearAcceleration;
     private float thrusterDistance, thrusterAngle, brakeDistance, brakeAngle;
 
+    private Vector3 dimensions;
+    private Transform body;
     private Transform mainThruster;
     private Transform rightThruster;
     private Transform leftThruster;
@@ -61,6 +63,7 @@ public class PlayerController : MonoBehaviour
         verticalVelocity = verticalWobbleAmplitude*verticalWobbleFrequency;
         wobbleVelocity = angularWobbleAmplitude * angularWobbleFrequency;
         // Get the position of thrusters from COM
+        body = this.transform.GetChild(0);
         mainThruster = this.transform.GetChild(0).GetChild(1);
         rightThruster = this.transform.GetChild(0).GetChild(2);
         leftThruster = this.transform.GetChild(0).GetChild(3);
@@ -73,7 +76,10 @@ public class PlayerController : MonoBehaviour
         thrusterAngle = Vector3.Angle(rightThruster.position - this.transform.position, mainThruster.position - this.transform.position);
         brakeDistance = Vector3.Distance(this.transform.position, rightBrake.position);
         brakeAngle = Vector3.Angle(rightBrake.position - this.transform.position, mainThruster.position - this.transform.position);
-        Debug.Log(thrusterAngle + " - " + brakeAngle);
+
+        dimensions = Vector3.Scale(body.GetComponent<MeshFilter>().mesh.bounds.size, body.localScale);
+        Debug.Log(dimensions);
+        sideArea = frontArea * dimensions.z / dimensions.x;
     }
 
     // Update is called once per frame
@@ -143,7 +149,6 @@ public class PlayerController : MonoBehaviour
 
             if (Input.GetButton("Fire3"))
             {
-                Debug.Log("POP");
                 if (linearVelocity.magnitude > 0)
                 {
                     linearAcceleration -= (friction) * System.Convert.ToSingle(Input.GetButton("Fire3")) * linearVelocity.normalized;
@@ -203,7 +208,6 @@ public class PlayerController : MonoBehaviour
         midWobble = wobbleVelocity + wobbleAcceleration * (Time.deltaTime / 2);
         this.transform.GetChild(0).RotateAround(transform.position, transform.forward, midWobble * Time.deltaTime);
         // Prevent any build up of small errors
-        //Debug.Log(Mathf.Abs(transform.GetChild(0).localEulerAngles.z));
         if (transform.GetChild(0).localEulerAngles.z > angularWobbleAmplitude && transform.GetChild(0).localEulerAngles.z < 180.0f)
             this.transform.GetChild(0).localEulerAngles = new Vector3(transform.GetChild(0).localEulerAngles.x, transform.GetChild(0).localEulerAngles.y, angularWobbleAmplitude);
         else if (transform.GetChild(0).localEulerAngles.z < 360.0f - angularWobbleAmplitude && transform.GetChild(0).localEulerAngles.z > 180.0f)
@@ -214,8 +218,5 @@ public class PlayerController : MonoBehaviour
         // Update position
         transform.RotateAround(transform.position, transform.up, angularVelocity*Time.deltaTime);
         transform.position += (linearVelocity * Time.deltaTime);
-        Debug.Log(transform.position);
-        //Debug.Log("A: " + verticalAcceleration + " - V: " + verticalVelocity + " - X: " + this.transform.GetChild(0).position);
-        //Debug.Log("A: " + wobbleAcceleration + " - V: " + wobbleVelocity + " - X: " + this.transform.GetChild(0).localEulerAngles.z);
     }
 }

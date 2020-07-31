@@ -441,6 +441,21 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 8522622354165398004, guid: 7964a5122b1963b4e8af00f9effd471c,
+        type: 3}
+      propertyPath: sideLinearDrag
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8522622354165398004, guid: 7964a5122b1963b4e8af00f9effd471c,
+        type: 3}
+      propertyPath: brakeLinearDrag
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8522622354165398004, guid: 7964a5122b1963b4e8af00f9effd471c,
+        type: 3}
+      propertyPath: sideArea
+      value: 0.9166667
+      objectReference: {fileID: 0}
     - target: {fileID: 8522622354165398005, guid: 7964a5122b1963b4e8af00f9effd471c,
         type: 3}
       propertyPath: m_Name
