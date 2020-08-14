@@ -79,7 +79,7 @@ public class PlayerController : MonoBehaviour
 
         dimensions = Vector3.Scale(body.GetComponent<MeshFilter>().mesh.bounds.size, body.localScale);
         Debug.Log(dimensions);
-        sideArea = frontArea * dimensions.z / dimensions.x;
+        //sideArea = frontArea * dimensions.z / dimensions.x;
     }
 
     // Update is called once per frame
